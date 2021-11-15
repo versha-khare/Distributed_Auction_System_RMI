@@ -43,9 +43,16 @@ public class AuctionItem implements Serializable{
 	* Sets the bid and sends message to the bidder(s) on their bid status
 	* @param ClientInterface, bidValue.
 	*/	
-    public synchronized void bid(ClientInterface c, double value){
+    public synchronized String bid(ClientInterface c, double value){
     	try{
-    		// put the bidder in the map
+    		//bidding validations done here instead of Auction class, so the bidding is thread-safe
+    		if(value <= start_price){
+    			return "Please place a higher bid";
+    		}
+    		if(getStatus() == "closed"){
+    			return "Sorry, this auction is closed ";
+    		}
+    			// put the bidder in the map
     		bids.put(c.getEmail(), c);
     		last_bidder = c;
     		last_bidderName = c.getName();
@@ -60,10 +67,11 @@ public class AuctionItem implements Serializable{
             		x.getMessage("You bid for Item: "+ item_name + " was outbidded at price of  "+ start_price + " by " + last_bidderName +"\n");
             	}
             }
+            return "Your bid has been placed !!! ------- Auction ID: " + ID;
     	}catch(Exception e){
     		e.printStackTrace();
     	}
-
+    	return "";
     }	
   	
   	/*
@@ -71,7 +79,10 @@ public class AuctionItem implements Serializable{
 	* notify the bidders and the seller.
   	*/
     public synchronized void closeAuction(){
-    	status = "closed";
+    	// If status is already closed it means that another thread just closed it. Dont do anything.
+    	if(status.equals("closed")) {  		
+    		return;
+    	}
 
     	try{
     		if(last_bidder == null){
@@ -84,10 +95,11 @@ public class AuctionItem implements Serializable{
     				if(bidder == last_bidder){
     					last_bidder.getMessage("\n Congrats!!! You have won the bid for --> "+ item_name+ "  at the price " +start_price );
     				}else{
-    					bidder.getMessage("\n An Auction item --> "+ item_name + " you bid on was outbidded and won by" + last_bidderName +" for "+ start_price +"\n");
+    					bidder.getMessage("\n An Auction item --> "+ item_name + " you bid on was outbidded and won by " + last_bidderName +" for "+ start_price +"\n");
     				}
     			}  
     		}
+    		status = "closed";
     	}catch(Exception e){
     		e.printStackTrace();
     	}

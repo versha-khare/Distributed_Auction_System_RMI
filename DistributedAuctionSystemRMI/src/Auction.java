@@ -19,6 +19,11 @@ public class Auction implements AuctionInterface{
 	public Auction() throws RemoteException{
 		auctionMap = new ConcurrentHashMap<>(); //Creates a new, empty map 
 	} 
+	
+	//Constructor when loading auction data from file
+	public Auction(ConcurrentHashMap concurrentHashMap) throws RemoteException{
+		this.auctionMap = concurrentHashMap;
+	} 
 
 	/*
 	* Creates the AuctionItem by taking
@@ -32,6 +37,8 @@ public class Auction implements AuctionInterface{
 		id = random();
 		AuctionItem a = new AuctionItem(id, name, des, minValue, maxValue, client);
 		auctionMap.put(id, a);
+		//Save changes to datafile
+		saveAuctionToBackupFile();
 		result = "Created auction successfully with aution ID: " + id;
 		return result;
 	}
@@ -50,6 +57,8 @@ public class Auction implements AuctionInterface{
 				if(id == entry.getKey()){
 					entry.getValue().closeAuction();
 					auctionMap.remove(id, entry.getValue());
+					//Save changes to datafile
+					saveAuctionToBackupFile();
 					result = "Auction with AuctionID: "+ id +" Closed.";
 				}else{
 					System.out.println("Please Enter a valid ID.");
@@ -86,13 +95,9 @@ public class Auction implements AuctionInterface{
         AuctionItem a = auctionMap.get(auctionID);
         if(a == null){
         	result = "Please enter a valid ID";
-        }else if(bidValue <= a.getStartPrice()){
-        	result = "Please place a higher bid";
-        }else if(a.getStatus() == "closed"){
-        	result = "Sorry, this auction is closed ";
         }else{
-        	a.bid(bidder, bidValue);
-        	result = "Your bid has been placed !!! ------- Auction ID: " + auctionID;
+        	result = a.bid(bidder, bidValue);
+        	saveAuctionToBackupFile();
         }
         return result;
 	}
@@ -104,5 +109,23 @@ public class Auction implements AuctionInterface{
 		Random rand = new Random();
 		long n = rand.nextInt(99999) + 11111; //Min is 11111, Max is 99999
 		return n;
+	}
+	
+	/*
+	* Save property auctionMap to backup file in case of server crash.
+	*/
+	private void saveAuctionToBackupFile() {
+		try {
+			FileOutputStream f = new FileOutputStream(new File("auctionBackup.txt"));
+			ObjectOutputStream o = new ObjectOutputStream(f);
+	
+			// Write objects to file
+			o.writeObject(auctionMap);
+	
+			o.close();
+			f.close();
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

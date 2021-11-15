@@ -5,6 +5,7 @@
  *view active AuctionItems                           *
  *****************************************************/
 
+import java.rmi.ConnectException;
 import java.rmi.Naming;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
@@ -35,7 +36,7 @@ public class Seller extends Buyer{
 	public static void main(String[] args){
 		
 		try{	
-			AuctionInterface server = (AuctionInterface) Naming.lookup("rmi://"+ host +"/"+ serverName);
+			AuctionInterface server = connectServer();
 		    System.out.println("Connected Server \n");
 
 		    ClientImplement y = new ClientImplement();
@@ -45,6 +46,8 @@ public class Seller extends Buyer{
 
 		}catch(MalformedURLException m){
 			System.out.println(m);
+		}catch(ConnectException e) {
+			System.out.println("Connection to server refused. Check that server is up.");
 		}catch(Exception e){
 			e.printStackTrace();
 		}
@@ -55,37 +58,46 @@ public class Seller extends Buyer{
 	* interact with the Auction like create, close, view or exit.
 	* @param AuctionInterface, ClientInterface
 	*/
-	public static void displayOption(AuctionInterface a, ClientInterface c){
+	public static void displayOption(AuctionInterface a, ClientInterface c) throws MalformedURLException, RemoteException, NotBoundException{
 		while(true){
-		    int choice = 0;
-			System.out.println("[1] View all Auction Item(s).   [2] Create an auction  [3] Close Auction  [4] Exit");
-			System.out.println("--------------------------------------------------------------");
-			System.out.println("Choose an option:");
+			try {
+			    int choice = 0;
+				System.out.println("[1] View all Auction Item(s).   [2] Create an auction  [3] Close Auction  [4] Exit");
+				System.out.println("--------------------------------------------------------------");
+				System.out.println("Choose an option:");
+	
+				Scanner scan = new Scanner(System.in);
+				choice =scan.nextInt();
+	
+				switch(choice){
+					case 1:
+					    listAll(a);
+					    break;
+	
+					case 2:
+						createAuction(a, c);
+						break;
+	
+					case 3:
+						closeAuction(a); 
+						break;
+						//Tip: Please make sure only owner can close their auction	
+						
+					case 4:
+						System.out.println("You have Exited.");
+						System.exit(0);
+						break;
+	
+					default:
+						System.out.println("Invalid Option");
+				}
+			}catch(ConnectException e) {
+				//if connection exception happens, try to reconnect to server in case the server restarted
+				//this avoids the need to restart client program
+				System.out.println("Lost connection to Server, trying to reconnect...");
+				a=connectServer();
+				System.out.println("Reconnected with server succesfully. Please re-enter command.");
 
-			Scanner scan = new Scanner(System.in);
-			choice =scan.nextInt();
-
-			switch(choice){
-				case 1:
-				    listAll(a);
-				    break;
-
-				case 2:
-					createAuction(a, c);
-					break;
-
-				case 3:
-					closeAuction(a); 
-					break;
-					//Tip: Please make sure only owner can close their auction	
-					
-				case 4:
-					System.out.println("You have Exited.");
-					System.exit(0);
-					break;
-
-				default:
-					System.out.println("Invalid Option");
 			}
 		}
 	}
@@ -95,7 +107,7 @@ public class Seller extends Buyer{
 	* itemName, description, StartPrice, ReservePrice
 	* @param AuctionInterface, ClientInterface
 	*/
-	public static void createAuction(AuctionInterface a, ClientInterface c){
+	public static void createAuction(AuctionInterface a, ClientInterface c) throws ConnectException{
 		try{
 			System.out.println("Enter Item name: ");
 			Scanner scan = new Scanner(System.in);
@@ -125,6 +137,8 @@ public class Seller extends Buyer{
 			System.out.println(a.createAuctionItem(name, des, min, res, c));
 		}catch(NumberFormatException n){
 			System.out.println("Error: Enter a Number");
+		}catch(ConnectException e){
+			throw e;
 		}catch(Exception e){
 			e.printStackTrace();
 		}
@@ -134,7 +148,7 @@ public class Seller extends Buyer{
 	* Can close an acuction by specifying AuctionID 
 	* @param AuctionInterface.
 	*/
-	public static void closeAuction(AuctionInterface a){
+	public static void closeAuction(AuctionInterface a) throws ConnectException{
 
 		try{
 			System.out.println("Enter the AuctionItem ID you want to close: ");
@@ -143,6 +157,8 @@ public class Seller extends Buyer{
 
 			System.out.println(a.closeAuctionItem(id));
 
+		}catch(ConnectException e){
+			throw e;
 		}catch(Exception e){
 			e.printStackTrace();
 		}

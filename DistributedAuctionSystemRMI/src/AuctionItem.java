@@ -117,13 +117,13 @@ public class AuctionItem implements Serializable{
     	s += "\nNumber Of bidders: " + bids.size();
     	s += "\n status: " + status;
 
-    	if(status == "open"){
+    	if(status.equals("open")){
     		if(last_bidder == null){
   				s += "\nLast Bidder: No bids yet";
     		}else{
     			s += "\n last_bidder: "+ last_bidderName;
     		}
-    	}else if(status == "closed"){
+    	}else if(status.equals("closed")){
     		if(last_bidder == null){
   				s += "\nLast Bidder: Closed with No bids";
     		}else{
